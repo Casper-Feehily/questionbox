@@ -1,0 +1,6 @@
+{$SITE_DOMAIN} {
+    request_body {
+        max_size 128KB
+    }
+    reverse_proxy web:8000
+}

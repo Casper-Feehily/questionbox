@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'reader.css' %}">
+<script src="{% static 'reader.js' %}" defer></script>
+{% endblock %}
+{% block body_class %}reader-page{% endblock %}
+{% block content %}
+<section class="reader" aria-labelledby="reader-title" data-reader data-feed-url="{% url 'reader_cards' %}" data-owner="{{ owner_name }}">
+  <div class="reader-toolbar">
+    <a class="reader-back" href="{% url 'home' %}#answers-title"><span aria-hidden="true">↙</span> 返回留言墙</a>
+    <span class="reader-mode"><span aria-hidden="true">✳</span> 沉浸式阅读</span>
+    {% if total > 1 %}<button class="reader-shuffle" type="button" data-shuffle hidden><span aria-hidden="true">⤨</span> 重新洗牌</button>{% endif %}
+  </div>
+  <div class="reader-intro"><h1 id="reader-title">随便读读<span class="pink-dot">.</span></h1><p>让好奇心，带你遇见下一封回信。</p></div>
+  {% if cards %}
+  <div class="reader-stage">
+    <span class="reader-decoration reader-decoration-word" aria-hidden="true">READ<br>SLOWLY.</span>
+    <span class="reader-decoration reader-decoration-star" aria-hidden="true">✳</span>
+    <div class="reader-deck" data-deck aria-label="随机回信卡片">
+      {% for card in cards %}<article class="reader-card" data-id="{{ card.id }}" data-tone="{% cycle 'lavender' 'green' 'blue' %}" data-slot="{{ forloop.counter0 }}" {% if not forloop.first %}aria-hidden="true" inert{% endif %}>
+        <div class="reader-card-top"><span>来自 {{ card.display_name }}</span><span class="reader-card-stamp">一封回信 <span aria-hidden="true">↗</span></span></div>
+        <div class="reader-scroll" tabindex="0" role="region" aria-label="问题与完整回答">
+          <h2 class="reader-question">{{ card.text }}</h2>
+          <div class="reader-reply"><span class="reply-label">{{ owner_name }} 的回信</span><div class="reader-prose">{{ card.answer }}</div></div>
+        </div>
+        <div class="reader-card-bottom"><span>{{ card.date }}{% if card.updated %} · 已更新{% endif %}</span><a href="{{ card.url }}">单独打开 <span aria-hidden="true">↗</span></a></div>
+        <div class="reader-peek" aria-hidden="true">下一封 · {{ card.text }}</div>
+      </article>{% endfor %}
+    </div>
+  </div>
+  <div class="reader-controls" data-controls hidden>
+    <button class="reader-previous" type="button" data-previous aria-label="上一封回信" disabled><span aria-hidden="true">→</span></button>
+    <div class="reader-position"><span data-position>01</span><span class="reader-position-divider">/</span><span data-total>{{ total|stringformat:'02d' }}</span></div>
+    <button class="button button-pink reader-next" type="button" data-next {% if total < 2 %}disabled{% endif %}>下一封 <span aria-hidden="true">←</span></button>
+  </div>
+  <p class="reader-hint" data-hint hidden><span class="reader-hint-mobile">左滑读下一封，右滑回到上一封</span><span class="reader-hint-desktop">左拖或按 ← 读下一封，右拖或按 → 回到上一封</span><span class="reader-hint-long"> · 长回信可在卡片内上下滚动</span></p>
+  <p class="reader-status" data-status role="status" aria-live="polite"></p>
+  <noscript><p class="reader-noscript">开启 JavaScript 即可滑动阅读。也可以<a href="{{ cards.0.url }}">单独打开这封回信</a>，或<a href="{% url 'reader' %}">再随机读一封</a>。</p></noscript>
+  {{ reader_data|json_script:'reader-data' }}
+  {% else %}
+  <div class="reader-empty"><span aria-hidden="true">✉</span><h2>第一封回信，还在路上。</h2><p>投递一个小问题，给这里一个新的开始。</p><a class="button button-pink" href="{% url 'home' %}">去提一个问题 <span aria-hidden="true">↗</span></a></div>
+  {% endif %}
+</section>
+{% endblock %}

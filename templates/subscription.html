@@ -1,0 +1,1 @@
+{% extends 'base.html' %}{% block content %}<section class="message-card"><span class="tape-label">关于回信通知</span><h1>{{ headline }}</h1><p>{{ description }}</p><form method="post">{% csrf_token %}<button class="button button-pink" type="submit">{{ button }}</button></form></section>{% endblock %}

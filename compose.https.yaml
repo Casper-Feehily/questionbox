@@ -1,0 +1,27 @@
+services:
+  web:
+    networks:
+      questionbox:
+        ipv4_address: 172.31.250.3
+  proxy:
+    image: caddy:2-alpine
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?Set SITE_DOMAIN in .env}
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on: [web]
+    networks:
+      questionbox:
+        ipv4_address: 172.31.250.2
+    restart: unless-stopped
+networks:
+  questionbox:
+    ipam:
+      config:
+        - subnet: 172.31.250.0/24
+volumes:
+  caddy-data:
+  caddy-config:

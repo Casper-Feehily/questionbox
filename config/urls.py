@@ -1,0 +1,24 @@
+from django.urls import path
+from box import views, reader
+
+urlpatterns = [
+    path("", views.home, name="home"),
+    path("read/", reader.reader, name="reader"),
+    path("read/cards/", reader.cards, name="reader_cards"),
+    path("ask/", views.ask, name="ask"),
+    path("thanks/", views.thanks, name="thanks"),
+    path("q/<uuid:pk>/", views.question_detail, name="question"),
+    path("privacy/", views.privacy, name="privacy"),
+    path("subscription/confirm/<str:token>/", views.confirm_subscription, name="confirm_subscription"),
+    path("subscription/unsubscribe/<str:token>/", views.unsubscribe, name="unsubscribe"),
+    path("owner/login/", views.owner_login, name="login"),
+    path("owner/logout/", views.owner_logout, name="logout"),
+    path("owner/", views.owner_inbox, name="owner"),
+    path("owner/mail/", views.owner_mail, name="owner_mail"),
+    path("owner/mail/connect/", views.mail_connect, name="mail_connect"),
+    path("owner/mail/callback/", views.mail_callback, name="mail_callback"),
+    path("owner/mail/disconnect/", views.mail_disconnect, name="mail_disconnect"),
+    path("owner/mail/test/", views.mail_test, name="mail_test"),
+    path("owner/q/<uuid:pk>/", views.owner_question, name="owner_question"),
+    path("owner/q/<uuid:pk>/delete/", views.owner_delete, name="owner_delete"),
+]

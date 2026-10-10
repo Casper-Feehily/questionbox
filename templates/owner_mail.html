@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="owner-heading"><div><span class="tape-label">MAIL SETTINGS</span><h1>让回信抵达邮箱。</h1><p>连接 Microsoft 邮箱，发送订阅成功和回答通知。</p></div><a class="button button-small" href="{% url 'owner' %}">返回收件箱</a></div>
+<section class="editor-card mail-settings" aria-labelledby="mail-status-title">
+  <h2 id="mail-status-title">邮件通知</h2>
+  {% if notifications_enabled %}<p class="mail-status">已启用{% if mail_status.sender %} · {{ mail_status.sender }}{% endif %}</p>
+  {% elif mail_status.requires_reauth %}<p class="form-errors" role="status">授权已失效，请重新连接邮箱。</p>
+  {% elif not mail_status.configured %}<p class="mail-status">等待配置客户端密码</p><p>在服务器填写客户端密码后，即可连接邮箱。</p>
+  {% elif not mail_status.connected %}<p class="mail-status">等待连接邮箱</p><p>请登录实际用于发通知的 Microsoft 邮箱，并授予发送邮件权限。</p>
+  {% else %}<p class="mail-status">邮箱已连接，邮件通知尚未启用</p>{% endif %}
+  {% if not graph_selected %}<p class="form-errors">当前服务器使用其他邮件后端，请先切换为 Microsoft Graph。</p>{% elif not mail_requested %}<p>服务器邮件开关尚未开启。</p>{% endif %}
+  <div class="owner-actions">
+    <form action="{% url 'mail_connect' %}" method="post">{% csrf_token %}<button class="button" type="submit" {% if not mail_status.configured or not graph_selected %}disabled{% endif %}>{% if mail_status.connected %}重新连接邮箱{% else %}连接 Microsoft 邮箱{% endif %}</button></form>
+    {% if mail_status.connected or mail_status.requires_reauth %}<form action="{% url 'mail_disconnect' %}" method="post">{% csrf_token %}<button class="button button-small" type="submit">断开邮箱</button></form>{% endif %}
+  </div>
+</section>
+{% if notifications_enabled %}<section class="editor-card mail-settings" aria-labelledby="mail-test-title"><h2 id="mail-test-title">试着寄一封信</h2><p>向你填写的邮箱发送测试邮件，确认配置是否成功。</p><form action="{% url 'mail_test' %}" method="post">{% csrf_token %}{{ test_form.as_p }}<button class="button button-small" type="submit">发送测试邮件</button></form></section>{% endif %}
+<section class="editor-card mail-settings" aria-labelledby="mail-config-title"><h2 id="mail-config-title">Microsoft 应用设置</h2><p>在应用的“身份验证”中添加 <strong>Web</strong> 回调地址：</p><code class="mail-config-value">{{ redirect_uri }}</code>
+<dl class="mail-config-list"><dt>应用程序（客户端）ID</dt><dd>{{ client_id|default:'尚未配置' }}</dd><dt>目录（租户）ID</dt><dd>{{ tenant_id|default:'尚未配置' }}</dd><dt>发件账户类型</dt><dd>{% if account_type == 'personal' %}个人 Outlook / Hotmail{% else %}Microsoft 365 组织邮箱{% endif %}</dd></dl><p>权限使用 Microsoft Graph 的 <strong>Mail.Send（委托）</strong> 和 <strong>offline_access</strong>。客户端密码仅保存在服务器配置中。</p></section>
+{% endblock %}

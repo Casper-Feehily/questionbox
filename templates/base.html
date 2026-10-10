@@ -1,0 +1,27 @@
+{% load static %}<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ site_title }}</title>
+  <meta name="description" content="{{ owner_name }}的匿名提问箱，无需登录，带着好奇来提问。">
+  <meta name="color-scheme" content="light dark">
+  <script src="{% static 'theme.js' %}"></script>
+  <link rel="icon" href="{% static 'favicon.svg' %}" type="image/svg+xml">
+  <link rel="stylesheet" href="{% static 'app.css' %}">
+  <script src="{% static 'app.js' %}" defer></script>
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <div class="site-shell">
+    <header class="site-header">
+      <a class="brand" href="{% url 'home' %}" aria-label="提问箱首页">QUESTIONBOX<span class="brand-mark" aria-hidden="true">?</span></a>
+      <div class="header-right"><span class="owner-label">{{ owner_name }} 的匿名提问箱</span>
+        <label class="theme-control"><span class="sr-only">外观主题</span><select id="theme-select" aria-label="外观主题"><option value="system">跟随系统</option><option value="light">明亮</option><option value="dark">黑暗</option></select></label>
+      </div>
+    </header>
+    {% if messages %}<div class="messages" aria-live="polite">{% for message in messages %}<p>{{ message }}</p>{% endfor %}</div>{% endif %}
+    <main id="main-content">{% block content %}{% endblock %}</main>
+    <footer class="site-footer"><span>慢慢提问，认真回答。<span class="footer-star" aria-hidden="true">✳</span></span><nav aria-label="页脚"><a href="{% url 'privacy' %}">隐私与规则</a><a href="{% url 'owner' %}">{% if request.user.is_superuser %}我的收件箱{% else %}主人入口{% endif %}</a></nav></footer>
+  </div>
+</body>
+</html>

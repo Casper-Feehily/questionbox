@@ -1,0 +1,1 @@
+{% extends 'base.html' %}{% block content %}<section class="message-card"><span class="message-star" aria-hidden="true">✳</span><span class="tape-label">A LITTLE NOTE</span><h1>{{ headline }}</h1><p>{{ message }}</p><a class="button button-pink" href="{% url 'home' %}">回到提问箱</a></section>{% endblock %}
