@@ -6,13 +6,14 @@
 {% endblock %}
 {% block body_class %}reader-page{% endblock %}
 {% block content %}
-<section class="reader" aria-labelledby="reader-title" data-reader data-feed-url="{% url 'reader_cards' %}" data-owner="{{ owner_name }}">
+<section class="reader" aria-labelledby="reader-title" data-reader data-feed-url="{{ feed_url }}" data-owner="{{ owner_name }}">
   <div class="reader-toolbar">
-    <a class="reader-back" href="{% url 'home' %}#answers-title"><span aria-hidden="true">↙</span> 返回留言墙</a>
+    <a class="reader-back" href="{% url 'home' %}#answers-title"><span aria-hidden="true">↙</span> 返回问答墙</a>
     <span class="reader-mode"><span aria-hidden="true">✳</span> 沉浸式阅读</span>
     {% if total > 1 %}<button class="reader-shuffle" type="button" data-shuffle hidden><span aria-hidden="true">⤨</span> 重新洗牌</button>{% endif %}
   </div>
   <div class="reader-intro"><h1 id="reader-title">随便读读<span class="pink-dot">.</span></h1><p>让好奇心，带你遇见下一封回信。</p></div>
+  <form class="reader-tag-form" action="{% url 'reader' %}" method="get"><label for="reader-tag">读点什么？</label><select name="tag" id="reader-tag" data-reader-tag><option value="">全部标签</option>{% if has_tag_filter and not selected_tag %}<option value="invalid" selected>标签已不可用</option>{% endif %}{% for tag in tags %}<option value="{{ tag.pk }}" {% if selected_tag.pk == tag.pk %}selected{% endif %}>{{ tag.name }}</option>{% endfor %}</select><button class="button button-small" type="submit">开始阅读 ↗</button></form>
   {% if cards %}
   <div class="reader-stage">
     <span class="reader-decoration reader-decoration-word" aria-hidden="true">READ<br>SLOWLY.</span>
@@ -39,7 +40,7 @@
   <noscript><p class="reader-noscript">开启 JavaScript 即可滑动阅读。也可以<a href="{{ cards.0.url }}">单独打开这封回信</a>，或<a href="{% url 'reader' %}">再随机读一封</a>。</p></noscript>
   {{ reader_data|json_script:'reader-data' }}
   {% else %}
-  <div class="reader-empty"><span aria-hidden="true">✉</span><h2>第一封回信，还在路上。</h2><p>投递一个小问题，给这里一个新的开始。</p><a class="button button-pink" href="{% url 'home' %}">去提一个问题 <span aria-hidden="true">↗</span></a></div>
+  <div class="reader-empty"><span aria-hidden="true">✉</span>{% if has_tag_filter %}<h2>这个标签下，还没有回信。</h2><p>换一个话题，继续随便读读。</p><a class="button button-pink" href="{% url 'reader' %}">清除筛选 ↗</a>{% else %}<h2>第一封回信，还在路上。</h2><p>投递一个小问题，给这里一个新的开始。</p><a class="button button-pink" href="{% url 'ask' %}">去提一个问题 <span aria-hidden="true">↗</span></a>{% endif %}</div>
   {% endif %}
 </section>
 {% endblock %}

@@ -64,11 +64,11 @@ class QuestionFlowTests(TestCase):
         self.assertEqual(Question(text="匿名提问").display_name, "匿名朋友")
 
     @override_settings(QUESTION_RATE_LIMIT_ENABLED=False)
-    def test_500_character_limit_and_no_uploads(self):
-        self.assertEqual(post(self.client, "/ask/", {"text": "问" * 501}).status_code, 400)
+    def test_700_character_limit_and_no_uploads(self):
+        self.assertEqual(post(self.client, "/ask/", {"text": "问" * 701}).status_code, 400)
         self.assertEqual(Question.objects.count(), 0)
-        self.assertEqual(post(self.client, "/ask/", {"text": "问" * 500}).status_code, 302)
-        self.assertEqual(Question.objects.get().text, "问" * 500)
+        self.assertEqual(post(self.client, "/ask/", {"text": "问" * 700}).status_code, 302)
+        self.assertEqual(Question.objects.get().text, "问" * 700)
         self.assertEqual(self.client.post("/ask/", {"text": "携带文件的请求"}).status_code, 415)
         self.assertEqual(self.client.post("/ask/", "x" * 17000, content_type="application/x-www-form-urlencoded").status_code, 413)
 

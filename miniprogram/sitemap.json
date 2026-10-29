@@ -1,0 +1,5 @@
+{ "desc": "只对公开回信开放索引", "rules": [
+  { "action": "allow", "page": "pages/wall/index" },
+  { "action": "allow", "page": "pages/detail/index", "params": ["mine"], "matching": "exclusive" },
+  { "action": "disallow", "page": "*" }
+] }

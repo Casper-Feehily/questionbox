@@ -1,0 +1,2 @@
+<import src="../../components/common.wxml" /><import src="../../components/list.wxml" />
+<view class="screen tabbed-screen {{theme}}"><template is="header" data="{{themeChoices, themeIndex, themeLabel, demo}}" /><template is="question-list" data="{{mine, items, meta, count, error, loading, hasMore, page, totalPages, pageNumbers, view, tag, tags, publicCount, topicCount}}" /><template is="footer" /></view>

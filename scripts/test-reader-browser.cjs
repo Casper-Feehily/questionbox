@@ -1,8 +1,6 @@
 // Requires Playwright and Chrome. Point READER_TEST_URL at a reader with at least eighteen letters.
 // Example: READER_TEST_URL=http://127.0.0.1:8125/read/ node scripts/test-reader-browser.cjs
 const assert = require('node:assert/strict');
-const path = require('node:path');
-const os = require('node:os');
 const { chromium } = require('playwright');
 const url = process.env.READER_TEST_URL || 'http://127.0.0.1:8125/read/';
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -90,7 +88,7 @@ async function checkReturnFrames(page) {
       page.on('pageerror', error => errors.push(error.message));
       assert.equal((await page.goto(url)).status(), 200);
       await ready(page);
-      await page.selectOption('#theme-select', theme);
+      await page.locator(`[data-theme-option="${theme}"]`).click();
       const count = await page.evaluate(() => JSON.parse(document.getElementById('reader-data').textContent).order.length);
       assert.ok(count >= 18, 'Provide at least eighteen public letters to exercise cache eviction before the next round');
       const firstId = await activeId(page);
@@ -109,7 +107,7 @@ async function checkReturnFrames(page) {
       assert.ok(later.x > early.x + 50, 'Previous letter must move continuously with the finger');
       assert.equal(later.opacity, 1);
       assert.ok(Math.abs(currentDragged.x - currentStart.x) < 20, 'Current letter should sink into the stack instead of sliding away');
-      await page.screenshot({ path: path.join(os.tmpdir(), `questionbox-return-drag-${mobile ? 'mobile' : 'desktop'}-${theme}.png`) });
+      await page.screenshot({ path: `/private/tmp/questionbox-return-drag-${mobile ? 'mobile' : 'desktop'}-${theme}.png` });
       await recordReturn(page, previousId);
       await drag.end();
       await ready(page);
@@ -194,7 +192,7 @@ async function checkReturnFrames(page) {
       } } finally {
         if (releaseCold) { releaseCold(); await page.unrouteAll({ behavior: 'ignoreErrors' }); }
       }
-      await page.screenshot({ path: path.join(os.tmpdir(), `questionbox-return-${mobile ? 'mobile' : 'desktop'}-${theme}.png`) });
+      await page.screenshot({ path: `/private/tmp/questionbox-return-${mobile ? 'mobile' : 'desktop'}-${theme}.png` });
       results.push({ device: mobile ? 'mobile' : 'desktop', theme, passed: 'follow pointer, current sinks, no fade, snapback, buttons, continuous return after cache eviction' });
       await context.close();
     }

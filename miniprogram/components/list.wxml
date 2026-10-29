@@ -1,0 +1,28 @@
+<template name="question-list">
+  <view wx:if="{{mine}}" class="hero"><view class="tape">只属于你的便签记录</view><view class="title small">我的提问<text class="accent">✳</text></view><view class="hint">记录小程序内的投递；网页匿名提问不自动绑定。 · {{count}} 张便签</view></view>
+  <block wx:else>
+    <view class="browse-hero">
+      <view class="tape">{{meta.owner_name || '站长'}} 的问答小站</view>
+      <view class="title"><view>一些好奇，</view><view>一些认真回答<text class="accent">.</text></view></view>
+      <view class="hint">随便逛逛，看看我们已经聊过的事。<view>也欢迎留下你的好奇心。</view></view>
+      <view class="browse-invitation"><view class="browse-summary"><view class="hint">这里已经收集了</view><view><text class="public-count">{{publicCount === null ? '—' : publicCount}}</text><text class="hint"> 封公开回信</text></view><view wx:if="{{topicCount}}" class="hint">{{topicCount}} 个话题 · 慢慢展开</view></view><button class="button ask-cta" bindtap="goAsk">向我提问 ↗</button></view>
+    </view>
+    <view id="answers-title" class="wall-heading"><view><view class="section-kicker">THE ANSWER WALL</view><view class="section-title">{{view === 'featured' ? '精选回答' : '已经聊过的事'}}<text class="accent"> ✳</text></view></view><button size="mini" class="reader-link" bindtap="openReader">沉浸式阅读 ↗</button></view>
+    <view class="browse-controls"><view class="view-tabs"><button size="mini" class="view-tab {{view === 'featured' ? 'selected' : ''}}" data-view="featured" bindtap="selectView">精选回答 ✳</button><button size="mini" class="view-tab {{view === 'all' ? 'selected' : ''}}" data-view="all" bindtap="selectView">所有回答</button></view><text class="hint">{{count}} 封回信</text></view>
+    <view wx:if="{{view === 'all'}}" class="tag-filters"><button size="mini" class="tag-chip {{!tag ? 'selected' : ''}}" data-tag="" bindtap="selectTag">全部标签</button><button size="mini" wx:for="{{tags}}" wx:key="id" class="tag-chip {{tag == item.id ? 'selected' : ''}}" data-tag="{{item.id}}" bindtap="selectTag">{{item.name}}</button></view>
+  </block>
+  <view wx:if="{{error}}" class="error">{{error}}<button class="button secondary" bindtap="retry" disabled="{{loading}}">重新加载</button></view>
+  <view wx:for="{{items}}" wx:key="id" class="card {{!mine ? 'answer-card tone-' + index % 4 : ''}}" data-id="{{item.id}}" data-mine="{{mine}}" bindtap="openDetail">
+    <view class="meta"><text>来自 {{item.display_name}}</text><text class="status">{{mine ? (item.status === 'answered' ? '已回复' : '等待回复') : (item.is_featured ? '✳ 精选' : 'Q / A')}}</text></view>
+    <view class="question-text">{{mine ? item.text : item.short_text}}</view>
+    <view wx:if="{{item.answer}}" class="reply"><view class="hint">{{meta.owner_name || '站长'}} 的回信</view><text class="prose">{{item.preview}}</text></view>
+    <view wx:if="{{!mine && view === 'all' && item.tags.length}}" class="card-tags"><text wx:for="{{item.tags}}" wx:for-item="topic" wx:key="id" data-tag="{{topic.id}}" catchtap="selectTag"># {{topic.name}}</text></view>
+    <view class="meta answer-bottom"><text>{{item.date_label}} {{item.version > 1 ? '· 已更新' : ''}}</text><text class="link">{{item.answer ? '读完整回信 ↗' : '查看便签 ↗'}}</text></view>
+  </view>
+  <view wx:if="{{loading}}" class="loading">便签正在路上…</view>
+  <view wx:if="{{!loading && !error && items.length === 0}}" class="empty"><view class="section-title">{{mine ? '还没有投递过便签。' : (view === 'featured' ? '精选回信，正在整理。' : (tag ? '这里还没有匹配的回信。' : '第一封回信，还在路上。'))}}</view><view class="hint">{{mine ? '带一个小问题来，给这里一个新的开始。' : '先去看看已经聊过的事吧。'}}</view><button wx:if="{{!mine && (view === 'featured' || tag)}}" class="button" data-tag="" bindtap="selectTag">浏览所有回答</button><button wx:else class="button" bindtap="goAsk">去提问</button></view>
+  <view wx:if="{{!mine && totalPages > 1}}" class="pagination" aria-label="分页">
+    <button size="mini" wx:for="{{pageNumbers}}" wx:key="*this" class="page-number {{item === page ? 'selected' : ''}}" data-page="{{item}}" bindtap="changePage" aria-label="第 {{item}} 页{{item === page ? '，当前页' : ''}}">{{item}}</button>
+  </view>
+  <button wx:if="{{mine && hasMore}}" class="button secondary" bindtap="more" disabled="{{loading}}">再读几封回信</button>
+</template>

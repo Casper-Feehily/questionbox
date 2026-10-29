@@ -1,0 +1,6 @@
+<view wx:if="{{!keyboardVisible}}" class="tab-dock {{theme}}" aria-label="底部导航">
+  <button wx:for="{{tabs}}" wx:key="path" class="tab-item {{selected === index ? 'selected' : ''}}" data-index="{{index}}" bindtap="switchTab" hover-class="tab-pressed" aria-label="{{item.text}}{{selected === index ? '，当前页' : ''}}">
+    <image class="tab-icon" src="/assets/tab-{{item.icon}}-{{theme === 'dark' && selected !== index ? 'light' : 'ink'}}.png" mode="aspectFit" aria-hidden="true" />
+    <text class="tab-label">{{item.text}}</text>
+  </button>
+</view>

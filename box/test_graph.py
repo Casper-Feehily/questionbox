@@ -18,8 +18,8 @@ from .tests import post
 
 
 @override_settings(EMAIL_ENABLED=True, EMAIL_BACKEND=graph.BACKEND,
-                   MS_GRAPH_CLIENT_ID="00000000-0000-4000-8000-000000000001",
-                   MS_GRAPH_TENANT_ID="00000000-0000-4000-8000-000000000002",
+                   MS_GRAPH_CLIENT_ID="11111111-1111-4111-8111-111111111111",
+                   MS_GRAPH_TENANT_ID="22222222-2222-4222-8222-222222222222",
                    MS_GRAPH_ACCOUNT_TYPE="organization", MS_GRAPH_CLIENT_SECRET="test-client-secret",
                    SITE_URL="https://ask.example.com")
 class GraphTests(TestCase):
@@ -116,7 +116,7 @@ class GraphTests(TestCase):
         self.assertNotIn(b"sender@example.com", path.read_bytes())
         self.assertEqual(path.stat().st_mode & 0o777, 0o600)
         self.assertNotContains(self.client.get("/"), "sender@example.com")
-        self.assertContains(self.client.get("/"), 'name="email"')
+        self.assertContains(self.client.get("/ask/"), 'name="email"')
 
     def test_failed_authorization_keeps_existing_mailbox_and_hides_provider_details(self):
         self.connect_cache()

@@ -1,0 +1,11 @@
+<import src="../../components/common.wxml" />
+<view class="screen {{theme}}"><template is="header" data="{{themeChoices, themeIndex, themeLabel, demo}}" />
+  <view class="hero"><view class="tape">让好奇心安心落地</view><view class="title small">隐私与规则<text class="accent">.</text></view></view>
+  <view class="card policy">
+    <view class="section-title">公开的范围</view><text>问题会先进入私人收件箱。主人回答并发布后，问题、可选署名及回复会同时公开。请不要填写你不希望公开的个人信息。</text>
+    <view class="section-title">匿名与我的提问</view><text>不填写署名时，公开回信显示为“匿名朋友”。投递或查看“我的提问”时，服务端会保存该小程序的微信用户标识及提问关联；不会读取真实姓名、头像、昵称或手机号。微信标识不会出现在公开页面或主人收件箱。</text><text>“我的提问”只包含小程序内提交的问题，网页匿名提问和历史记录不会自动绑定。服务端会话默认有效 30 天，只保存令牌摘要，过期后重新微信登录。身份记录用于同一微信账号跨设备查看提问。</text>
+    <view class="section-title">通知由你选择</view><text>点击“回复时提醒我”并同意微信订阅授权后，可以收到一次回复提醒。拒绝不影响提问，尚未发送的提醒可以停止。微信平台可能因权限或网络原因无法送达，仍可在“我的提问”查看回复。</text><text>邮箱完全可选。填写邮箱即订阅这条问题的首次回复与后续更新邮件；每封邮件包含退订链接。邮件与微信通知均不包含提问原文，已经送达的通知无法撤回。</text>
+    <view class="section-title">内容与保留</view><text>仅接收文字，不渲染 HTML、图片、附件或链接预览。每条问题最多 700 字，全站最多保存 500 条。请勿发送违法内容、骚扰、广告或他人的私人信息。主人可以删除问题，删除同时移除回复、订阅和通知任务。</text><text>服务端用经密钥处理的身份与 IP 计数限制投递速度，过期计数及会话由后台清理。未提交的输入保存在当前小程序的本机存储中，投递成功后清除。</text>
+    <view wx:if="{{demo}}" class="section-title">演示模式</view><text wx:if="{{demo}}">所有示例和模拟投递仅保存在本机。不会连接服务器、微信登录、发送邮件或微信通知。切换真实模式后，演示记录不会上传或绑定。</text>
+  </view><button class="button" bindtap="goAsk">回到提问箱</button><template is="footer" />
+</view>

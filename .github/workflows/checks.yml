@@ -15,4 +15,8 @@ jobs:
       - run: python manage.py collectstatic --noinput
       - run: python manage.py makemigrations --check --dry-run
       - run: python manage.py test box --noinput
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test miniprogram/tests/*.test.js
       - run: pip check

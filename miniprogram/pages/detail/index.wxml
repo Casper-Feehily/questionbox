@@ -1,0 +1,26 @@
+<import src="../../components/common.wxml" />
+<view class="screen {{theme}}">
+  <template is="header" data="{{themeChoices, themeIndex, themeLabel, demo}}" />
+  <button wx:if="{{!singlePage}}" size="mini" class="detail-back" bindtap="goHome">← 返回首页</button>
+  <view wx:if="{{loading}}" class="loading">正在打开便签…</view>
+  <view wx:if="{{error}}" class="error">{{error}}<button wx:if="{{!missing}}" class="button secondary" bindtap="reload">重新加载</button></view>
+  <view wx:if="{{question}}" class="card">
+    <view class="meta"><text>来自 {{question.display_name}}</text><text class="status">{{question.status === 'answered' ? '一封回信' : '等待回复'}}</text></view>
+    <text class="question-text prose">{{question.text}}</text>
+    <view class="reply"><view class="hint">{{meta.owner_name || '站长'}} 的回信</view><text wx:if="{{question.answer}}" class="prose">{{question.answer}}</text><view wx:else class="hint">回信还在路上。你的问题仍在私人收件箱里，尚未公开。</view></view>
+    <view class="meta"><text>{{question.date_label}}</text><text>{{question.version > 1 ? '回信已更新' : ''}}</text></view>
+    <block wx:if="{{mine}}">
+      <button wx:if="{{meta.reminders_enabled && !question.wechat_reminder.enabled && question.wechat_reminder.status !== 'sent'}}" class="button" bindtap="remind" disabled="{{reminding}}" loading="{{reminding}}">回复时提醒我</button>
+      <view wx:if="{{question.wechat_reminder.enabled}}" class="hint consent">{{question.reminder_label}}</view>
+      <view wx:if="{{question.wechat_reminder.status === 'uncertain' || question.wechat_reminder.status === 'failed' || question.wechat_reminder.status === 'rejected'}}" class="hint">微信提醒未确认送达。你可以直接在这里查看回复。</view>
+      <button wx:if="{{question.wechat_reminder.enabled && question.wechat_reminder.status !== 'sent'}}" class="button secondary" bindtap="stopReminder" disabled="{{reminding}}">停止尚未发送的提醒</button>
+    </block>
+  </view>
+  <view wx:if="{{!singlePage}}" class="detail-actions">
+    <button class="button" bindtap="goHome">返回首页</button>
+    <button class="button secondary" bindtap="goAsk">再投一张便签</button>
+  </view>
+  <view wx:else class="hint detail-single-page">当前为朋友圈单页阅读，可通过微信底部“前往小程序”使用完整功能。</view>
+  <template wx:if="{{!singlePage}}" is="footer" />
+  <canvas wx:if="{{!mine && !singlePage}}" type="2d" id="question-share-canvas" class="question-share-canvas" aria-hidden="true" />
+</view>

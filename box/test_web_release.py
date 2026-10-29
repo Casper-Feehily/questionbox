@@ -1,12 +1,11 @@
 from django.test import SimpleTestCase, TestCase, override_settings
-from django.urls import Resolver404, resolve
+from django.urls import resolve
 
 
 class WebReleaseRoutesTests(SimpleTestCase):
-    def test_private_client_api_is_not_published(self):
-        for path in ("/api/v1/meta/", "/api/v1/me/questions/"):
-            with self.subTest(path=path), self.assertRaises(Resolver404):
-                resolve(path)
+    def test_miniprogram_api_routes_are_published(self):
+        self.assertEqual(resolve("/api/v1/meta/").url_name, "api_meta")
+        self.assertEqual(resolve("/api/v1/me/questions/").url_name, "api_my_questions")
 
 
 class WebReleaseBrandingTests(TestCase):

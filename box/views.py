@@ -1,6 +1,7 @@
 from functools import wraps
 import secrets
 import time
+import uuid
 from django import forms
 from django.conf import settings
 from django.contrib import messages
@@ -10,18 +11,20 @@ from django.core import signing
 from django.core.mail import send_mail
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
-from .forms import AnswerForm, AskForm
+from .forms import AnswerForm, AskForm, ClassificationForm
+from .browsing import published, tag_choices, filter_tag, public_selection
 from .mail import get_subscription, queue_answer
-from .models import MailJob, Question, ServerChanJob, Subscription
+from .models import MailJob, Question, ServerChanJob, Subscription, WechatMessageJob, Tag
 from .rate_limit import RateLimited, consume
 from .serverchan import queue_question
 from . import graph
 from .submission import SubmissionError, submit_question
+from .wechat import queue_reply, retry_failed
 
 
 def owner_required(view):
@@ -35,12 +38,17 @@ def owner_required(view):
     return wrapped
 
 
-def home_context(request, form=None):
-    questions = Question.objects.filter(answered_at__isnull=False).exclude(answer="").order_by("-answer_updated_at", "-id")
+def home_context(request):
+    context = public_selection(request.GET)
+    questions = context.pop("questions")
     per_page = 7 if request.GET.get("per_page") == "7" else 14
     paginator = Paginator(questions, per_page)
-    return {"form": form or AskForm(), "page": paginator.get_page(request.GET.get("page")),
-            "per_page": per_page, "answered_count": paginator.count,
+    return {**context, "page": paginator.get_page(request.GET.get("page")),
+            "per_page": per_page, "answered_count": paginator.count}
+
+
+def ask_context(form=None):
+    return {"form": form if form is not None else AskForm(),
             "box_full": Question.objects.count() >= settings.MAX_QUESTIONS}
 
 
@@ -49,19 +57,21 @@ def home(request):
     return render(request, "home.html", home_context(request))
 
 
-@require_POST
+@require_http_methods(["GET", "POST"])
 def ask(request):
+    if request.method == "GET":
+        return render(request, "ask.html", ask_context())
     form = AskForm(request.POST, request.FILES)
     if not form.is_valid():
-        return render(request, "home.html", home_context(request, form), status=400)
+        return render(request, "ask.html", ask_context(form), status=400)
     try:
         submit_question(request, form.cleaned_data)
     except SubmissionError as exc:
         form.add_error(None, exc.message)
-        return render(request, "home.html", home_context(request, form), status=409)
+        return render(request, "ask.html", ask_context(form), status=409)
     except RateLimited as exc:
         form.add_error(None, f"提出好问题需要一点时间 ☕ 让好奇心酝酿一下，还需等待 {exc.seconds} 秒再投递。")
-        response = render(request, "home.html", home_context(request, form), status=429)
+        response = render(request, "ask.html", ask_context(form), status=429)
         response["Retry-After"] = str(exc.seconds)
         return response
     return redirect("thanks")
@@ -69,7 +79,7 @@ def ask(request):
 
 @require_GET
 def thanks(request):
-    return render(request, "message.html", {"headline": "收到你的好奇心了！", "message": "问题已进入私人收件箱，回答并发布之后才会出现在这里。如果填写了邮箱，已自动订阅这条问题的回信，并会收到订阅成功邮件。"})
+    return render(request, "message.html", {"headline": "收到你的好奇心了！", "message": "问题已进入私人收件箱，回答并发布之后才会出现在这里。如果填写了邮箱，已自动订阅这条问题的回信，并会收到订阅成功邮件。", "submitted": True})
 
 
 @require_GET
@@ -151,14 +161,18 @@ def owner_inbox(request):
     questions = Question.objects.order_by("-created_at")
     if selected == "answered":
         questions = questions.filter(answered_at__isnull=False)
+    elif selected == "untagged":
+        questions = questions.filter(tags__isnull=True)
     else:
         selected = "pending"
         questions = questions.filter(answered_at__isnull=True)
     return render(request, "owner.html", {"page": Paginator(questions, 20).get_page(request.GET.get("page")),
         "selected": selected, "pending_count": Question.objects.filter(answered_at__isnull=True).count(),
         "published_count": Question.objects.filter(answered_at__isnull=False).count(),
+        "untagged_count": Question.objects.filter(tags__isnull=True).count(),
         "failed_mail_count": MailJob.objects.filter(status="failed").count(),
         "failed_notification_count": ServerChanJob.objects.filter(status="failed").count(),
+        "failed_wechat_count": WechatMessageJob.objects.filter(status__in=["failed", "uncertain"]).count(),
         "stored_count": Question.objects.count(), "capacity": settings.MAX_QUESTIONS})
 
 
@@ -166,8 +180,11 @@ def owner_inbox(request):
 @require_http_methods(["GET", "POST"])
 def owner_question(request, pk):
     question = get_object_or_404(Question, pk=pk)
+    autosave = request.method == "POST" and request.POST.get("action") == "autosave"
     form = AnswerForm(request.POST if request.method == "POST" else None,
-                      initial={"answer": question.draft or question.answer, "expected_version": question.version})
+                      initial={"answer": question.draft if question.draft_revision else question.draft or question.answer,
+                               "expected_version": question.version,
+                               "expected_draft": str(question.draft_revision or "")})
     status = 200
     if request.method == "POST" and form.is_valid():
         with transaction.atomic():
@@ -175,9 +192,23 @@ def owner_question(request, pk):
             if form.cleaned_data["expected_version"] != question.version:
                 form.add_error(None, "答案已在其他页面更新。请重新打开此问题后再编辑，避免覆盖新的回答。")
                 status = 409
-            elif request.POST.get("action") == "draft":
+            elif autosave and "expected_draft" not in request.POST:
+                form.add_error(None, "缺少草稿版本，请重新打开此问题后再编辑。")
+                status = 400
+            elif (autosave and form.cleaned_data["save_id"]
+                  and form.cleaned_data["save_id"] == question.draft_revision
+                  and form.cleaned_data["answer"] == question.draft):
+                # A successful write may lose its response; acknowledge only that exact retry.
+                return JsonResponse({"draft_revision": str(question.draft_revision)})
+            elif "expected_draft" in request.POST and form.cleaned_data["expected_draft"] != str(question.draft_revision or ""):
+                form.add_error(None, "草稿已在其他页面更新。请先复制当前内容，再重新打开此问题，避免覆盖新的草稿。")
+                status = 409
+            elif request.POST.get("action") in {"draft", "autosave"}:
                 question.draft = form.cleaned_data["answer"]
-                question.save(update_fields=["draft"])
+                question.draft_revision = (form.cleaned_data["save_id"] if autosave else None) or uuid.uuid4()
+                question.save(update_fields=["draft", "draft_revision"])
+                if autosave:
+                    return JsonResponse({"draft_revision": str(question.draft_revision)})
                 messages.success(request, "草稿已保存，公开回答保持原样。")
                 return redirect("owner_question", pk=question.pk)
             elif request.POST.get("action") == "publish":
@@ -187,14 +218,18 @@ def owner_question(request, pk):
                 if changed:
                     now = timezone.now()
                     question.answer, question.draft = answer, ""
+                    question.draft_revision = None
                     question.answered_at = question.answered_at or now
                     question.answer_updated_at = now
                     question.version += 1
                     question.save()
                     queue_answer(question, event)
-                elif question.draft:
+                    if event == "answered":
+                        queue_reply(question)
+                elif question.draft or question.draft_revision:
                     question.draft = ""
-                    question.save(update_fields=["draft"])
+                    question.draft_revision = None
+                    question.save(update_fields=["draft", "draft_revision"])
                 messages.success(request, "回答已发布。" if changed else "内容没有变化，无需重复发布。")
                 return redirect("owner_question", pk=question.pk)
             else:
@@ -202,7 +237,44 @@ def owner_question(request, pk):
                 status = 400
     elif request.method == "POST":
         status = 400
-    return render(request, "owner_question.html", {"question": question, "form": form}, status=status)
+    if autosave:
+        error = next(error for errors in form.errors.values() for error in errors)
+        return JsonResponse({"error": error}, status=status)
+    classification = ClassificationForm(initial={"is_featured": question.is_featured, "tags": question.tags.all()})
+    return render(request, "owner_question.html", {"question": question, "form": form,
+                                                  "classification_form": classification}, status=status)
+
+
+@owner_required
+@require_POST
+def owner_classification(request, pk):
+    question = get_object_or_404(Question, pk=pk)
+    wants_json = "application/json" in request.headers.get("Accept", "")
+    form = ClassificationForm(request.POST)
+    if not form.is_valid():
+        if wants_json:
+            return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
+        answer_form = AnswerForm(initial={
+            "answer": question.draft if question.draft_revision else question.draft or question.answer,
+            "expected_version": question.version, "expected_draft": str(question.draft_revision or ""),
+        })
+        return render(request, "owner_question.html", {"question": question, "form": answer_form,
+                                                       "classification_form": form}, status=400)
+    with transaction.atomic():
+        question = get_object_or_404(Question.objects.select_for_update(), pk=pk)
+        tags = list(form.cleaned_data["tags"])
+        for name in form.cleaned_data["new_tags"]:
+            tag, _ = Tag.objects.get_or_create(name=name)
+            tags.append(tag)
+        question.is_featured = form.cleaned_data["is_featured"]
+        question.save(update_fields=["is_featured"])
+        question.tags.set(tags)
+    if not wants_json:
+        messages.success(request, "精选与标签已保存。")
+        return redirect("owner_question", pk=pk)
+    return JsonResponse({"message": "精选与标签已保存。", "is_featured": question.is_featured,
+                         "selected": list(question.tags.values_list("pk", flat=True)),
+                         "tags": list(Tag.objects.values("id", "name"))})
 
 
 @owner_required
@@ -211,6 +283,14 @@ def owner_delete(request, pk):
     with transaction.atomic():
         get_object_or_404(Question.objects.select_for_update(), pk=pk).delete()
     messages.success(request, "问题及其答案、订阅和待发邮件已删除。")
+    return redirect("owner")
+
+
+@owner_required
+@require_POST
+def owner_retry_wechat(request):
+    count = retry_failed()
+    messages.success(request, f"已重排 {count} 条可重试的微信提醒。结果不明确的任务不会自动重发，请先检查。")
     return redirect("owner")
 
 

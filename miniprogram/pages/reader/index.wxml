@@ -1,0 +1,23 @@
+<import src="../../components/common.wxml" />
+<view class="screen reader-screen {{theme}}">
+  <template is="header" data="{{themeChoices, themeIndex, themeLabel, demo}}" />
+  <view class="reader-toolbar"><text bindtap="back">↙ 返回公开回信</text><button class="reader-shuffle" bindtap="shuffle" disabled="{{busy || !canNext}}">✳ 重新洗牌</button></view>
+  <view class="reader-intro"><view class="title small">随便读读<text class="accent">.</text></view><view class="hint">让好奇心，带你遇见下一封回信。</view></view>
+  <view wx:if="{{loading}}" class="loading">回信正在路上…</view>
+  <view wx:if="{{error}}" class="error">{{error}}<button class="button secondary" bindtap="{{cards.length ? 'next' : 'reload'}}">重新尝试</button></view>
+  <view wx:if="{{!loading && !error && !cards.length}}" class="empty"><view class="section-title">第一封回信，还在路上。</view><button class="button" bindtap="goAsk">去提问</button></view>
+  <view wx:if="{{cards.length}}" class="reader-stage">
+    <view class="reader-deck {{dragging ? 'is-dragging' : ''}}" bindtouchstart="touchStart" bindtouchmove="touchMove" bindtouchend="touchEnd" bindtouchcancel="cancel">
+      <view wx:for="{{cards}}" wx:key="key" class="reader-card tone-{{item.tone}} {{item.slot > 0 ? 'stacked' : ''}}" style="{{styles[item.key]}}" aria-hidden="{{item.slot !== 0 || busy}}">
+        <view class="reader-top"><text>来自 {{item.question.display_name}}</text><text>一封回信 <text class="accent">↗</text></text></view>
+        <scroll-view class="reader-scroll" scroll-y="{{item.slot === 0 && !dragging && !busy}}" scroll-top="{{item.scrollTop}}" data-key="{{item.key}}" bindscroll="scroll" show-scrollbar="{{false}}">
+          <view class="question-text">{{item.question.text}}</view><view class="reply"><view class="hint accent">{{meta.owner_name || '站长'}} 的回信</view><text class="prose" user-select="{{!dragging && !busy && item.slot === 0}}">{{item.question.answer}}</text></view>
+        </scroll-view>
+        <view class="reader-bottom"><text>{{item.question.date_label}}{{item.question.version > 1 ? ' · 已更新' : ''}}</text><text wx:if="{{item.slot === 0 && !busy}}" class="link" data-id="{{item.question.id}}" catchtap="openDetail">单独打开 ↗</text></view>
+        <view wx:if="{{item.slot > 0}}" class="reader-peek">下一封 · {{item.question.text}}</view>
+      </view>
+    </view>
+  </view>
+  <view wx:if="{{cards.length}}" class="reader-controls"><button class="reader-previous" bindtap="previous" disabled="{{busy || !canPrevious}}">→</button><view class="reader-position">{{position}} <text class="hint">/ {{total}}</text></view><button class="button reader-next" bindtap="next" disabled="{{busy || !canNext}}">下一封　←</button></view>
+  <view wx:if="{{cards.length}}" class="reader-hint hint">左滑读下一封，右滑回到上一封 · 长回信可上下滚动</view>
+</view>

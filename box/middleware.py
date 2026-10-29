@@ -3,7 +3,7 @@ import re
 import uuid
 from django.conf import settings
 from django.core import signing
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 
 
 def client_address(request):
@@ -35,8 +35,9 @@ class BoundaryMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        def rejected(message, status):
-            response = HttpResponse(message, status=status)
+        is_api = request.path.startswith("/api/v1/")
+        def rejected(code, message, status):
+            response = JsonResponse({"error": {"code": code, "message": message}}, status=status) if is_api else HttpResponse(message, status=status)
             response["Cache-Control"] = "no-store"
             return response
         peer = request.META.get("REMOTE_ADDR", "")
@@ -67,17 +68,20 @@ class BoundaryMiddleware:
             except ValueError:
                 too_large = True
             if too_large:
-                return rejected("请求过大。请只发送文字。", 413)
-            expected = "application/x-www-form-urlencoded"
+                return rejected("request_too_large", "请求过大。请只发送文字。", 413)
+            expected = "application/json" if is_api else "application/x-www-form-urlencoded"
             if content_type != expected:
-                return rejected("只接受文字表单，不接收文件或图片。", 415)
+                return rejected("unsupported_media_type", "只接受 JSON 文字请求。" if is_api else "只接受文字表单，不接收文件或图片。", 415)
         response = self.get_response(request)
-        if fresh:
+        if is_api and response.status_code >= 400 and not response.get("Content-Type", "").startswith("application/json"):
+            response = rejected("not_found" if response.status_code == 404 else "request_failed",
+                                "内容已不存在。" if response.status_code == 404 else "请求未完成，请稍后重试。", response.status_code)
+        if fresh and not is_api:
             response.set_signed_cookie(settings.VISITOR_COOKIE, visitor, salt=settings.VISITOR_COOKIE_SALT,
                                        max_age=settings.VISITOR_COOKIE_AGE, httponly=True,
                                        secure=not settings.DEBUG, samesite="Lax")
         response["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
         response["Cache-Control"] = "no-store"
-        if request.path.startswith(("/owner/", "/subscription/", "/thanks/")):
+        if request.path.startswith(("/owner/", "/subscription/", "/thanks/", "/api/")):
             response["X-Robots-Tag"] = "noindex, nofollow"
         return response

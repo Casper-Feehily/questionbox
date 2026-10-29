@@ -17,6 +17,14 @@ __pycache__/
 screenshots/
 .idea/
 .vscode/
-miniprogram/
 node_modules/
 *.log
+
+**/project.private.config.json
+*.p12
+*.pfx
+*.enc
+*.bak
+*.backup
+*.zip
+*.tar*

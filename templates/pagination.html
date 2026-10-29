@@ -3,7 +3,7 @@
 {% page_numbers page as numbers %}
 <nav class="pagination" aria-label="分页">
   {% for number in numbers %}
-  <a class="button button-small page-number{% if number == page.number %} button-pink{% endif %}" {% if number == page.number %}aria-current="page"{% endif %} aria-label="第 {{ number }} 页" href="{% if per_page %}{% url 'home' %}{% endif %}?{% if selected %}state={{ selected }}&amp;{% endif %}page={{ number }}{% if per_page %}&amp;per_page={{ per_page }}#answers-title{% endif %}">{{ number }}</a>
+  <a class="button button-small page-number{% if number == page.number %} button-pink{% endif %}" {% if number == page.number %}aria-current="page"{% endif %} aria-label="第 {{ number }} 页" href="{% if per_page %}{% url 'home' %}{% endif %}?{% if selected_view %}view={{ selected_view }}&amp;{% if tag_param %}tag={{ tag_param }}&amp;{% endif %}{% endif %}{% if selected %}state={{ selected }}&amp;{% endif %}page={{ number }}{% if per_page %}&amp;per_page={{ per_page }}#answers-title{% endif %}">{{ number }}</a>
   {% endfor %}
 </nav>
 {% endif %}

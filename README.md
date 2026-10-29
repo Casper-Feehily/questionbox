@@ -1,14 +1,17 @@
 # Questionbox · 好奇心俱乐部
 
-可以自己部署的网页版匿名提问箱。访客投递文字，主人在私人收件箱中保存草稿、回答并发布；**回答发布之前，问题不会公开。** 界面采用便签与贴纸风格，支持明亮、黑暗和跟随系统的主题。
+可以自己部署的网站与微信小程序匿名提问箱。访客投递文字，主人在私人收件箱中保存草稿、回答并发布；**回答发布之前，问题不会公开。** 界面采用便签与贴纸风格，支持明亮、黑暗和跟随系统的主题。
 
-这是独立的网页版源码，包含 Django 后端、网页界面、测试和通用部署配置，不包含微信小程序或其专用接口，也不包含运行数据、账号或真实密钥。使用 [GNU General Public License v3许可](LICENSE)。
+本仓库包含 Django 后端、网页界面、原生微信小程序、测试和通用部署配置。网站与小程序共用问题和回信；运行数据、账号和真实凭据由部署者自行配置。使用 [GNU GPLv3 许可](LICENSE)。
 
 ## 功能
 
 - 无需访客账号，支持匿名或自选署名；署名未经身份验证。
-- 每条提问最多 500 个 Unicode 字符，全站最多保存 500 条问题，含私人问题；删除释放名额。
+- 每条提问最多 700 个 Unicode 字符，全站最多保存 500 条问题，含私人问题；删除释放名额。
 - 主人登录、私人收件箱、草稿、发布、编辑、删除与分页；旧编辑页面不能覆盖更新后的答案。
+- 公开回信支持精选、所有回答、标签筛选和分页；首页先浏览，`/ask/` 投递。
+- 主人可管理标签、精选和草稿；后台支持自动保存及版本冲突保护。
+- 原生微信小程序支持公开回信、投递、我的提问、沉浸式阅读、主题、分享与一次回复提醒。
 - 沉浸式回信阅读器，支持触屏滑动、鼠标拖动、横向滚动和方向键。
 - IP 和签名 Cookie 限流：默认每位访客每分钟 1 条、每小时 10 条；每 IP 每小时 30 条、全站每小时 300 条。
 - 可选 SMTP / Microsoft Graph 邮箱通知，填写邮箱后自动订阅，支持退订、队列、失败重试。
@@ -39,6 +42,12 @@ python3 -m venv .venv
 ```
 
 开发时可在本地 `.env` 中设置 `OWNER_NAME`、`SITE_TITLE` 和 `DEBUG=1`。配置示例在 [.env.example](.env.example)。其中 `DATA_DIR=/app/data` 是 Docker 路径；本地请省略该项，或填写自己有权限的绝对路径。没有启用邮件或提醒时不会联系对应服务。
+
+## 微信小程序
+
+在微信开发者工具导入 `miniprogram/`。仓库使用 `touristappid` 和 `demo: true`，默认演示只读写本机示例，不发送网络请求、邮件或微信通知。真实联调时填写自己的 AppID，把 `config.js` 的 `apiBase` 改为自己的 HTTPS API，并设置 `demo: false`；AppSecret 只写服务端私有 `.env`。
+
+小程序与网站使用同一 Django 服务的 `/api/v1/`。公开阅读无需微信登录；投递和“我的提问”需要配置真实账号。主人继续通过网页 `/owner/` 管理。详细配置、订阅模板及验证步骤见 [微信小程序](docs/wechat-miniprogram.md)。
 
 ## Docker Compose + HTTPS 部署
 
@@ -144,9 +153,10 @@ docker compose exec web python manage.py backup_database
 .venv/bin/python manage.py makemigrations --check --dry-run
 .venv/bin/python manage.py test box --noinput
 .venv/bin/pip check
+node --test miniprogram/tests/*.test.js
 ```
 
-测试使用独立数据库，外部通知服务在测试中模拟；测试密码和 token 是模拟值。本版采用网页版迁移链，适合全新安装，不能直接用于升级包含其他客户端功能的既有数据库。
+测试使用独立数据库，外部通知服务在测试中模拟；测试密码和 token 是模拟值。本版保留已发布开源版的 `0004_barkjob`，后续通过 `0005_wechat` 增加微信模型。旧开源版升级前先备份，再运行 `migrate`。其他私有版本的迁移编号可能不同，不要直接混用或通过 `--fake` 跳过迁移。
 
 主要入口：`box/views.py` 负责网页与主人操作，`box/submission.py` 负责投递事务，`box/rate_limit.py` 负责限流，`box/mail.py` 负责邮件队列，`templates/` 和 `static/` 负责界面。
 

@@ -5,9 +5,10 @@ from django.db import close_old_connections
 from django.contrib.sessions.models import Session
 from django.utils import timezone
 from box.mail import deliver_one
-from box.models import MailJob, RateBucket, ServerChanJob, BarkJob
+from box.models import MailJob, RateBucket, ServerChanJob, BarkJob, WechatSession
 from box.serverchan import deliver_one as deliver_notification
 from box.bark import deliver_one as deliver_bark
+from box.wechat import deliver_one as deliver_wechat
 
 
 class Command(BaseCommand):
@@ -23,6 +24,7 @@ class Command(BaseCommand):
                 close_old_connections()
                 RateBucket.objects.filter(expires_at__lt=timezone.now() - timedelta(days=1)).delete()
                 Session.objects.filter(expire_date__lt=timezone.now()).delete()
+                WechatSession.objects.filter(expires_at__lte=timezone.now()).delete()
                 MailJob.objects.filter(status__in=["sent", "cancelled"], created_at__lt=timezone.now() - timedelta(days=7)).delete()
                 ServerChanJob.objects.filter(status="sent", created_at__lt=timezone.now() - timedelta(days=7)).delete()
                 BarkJob.objects.filter(status="sent", created_at__lt=timezone.now() - timedelta(days=7)).delete()
@@ -30,7 +32,8 @@ class Command(BaseCommand):
                     sent_mail = deliver_one()
                     sent_notification = deliver_notification()
                     sent_bark = deliver_bark()
-                    if not sent_mail and not sent_notification and not sent_bark:
+                    sent_wechat = deliver_wechat()
+                    if not sent_mail and not sent_notification and not sent_wechat and not sent_bark:
                         break
                 if options["once"]:
                     return

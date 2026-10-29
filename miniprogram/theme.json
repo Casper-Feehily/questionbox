@@ -1,0 +1,4 @@
+{
+  "light": { "navBg": "#f4f255", "navText": "black", "pageBg": "#f4f255" },
+  "dark": { "navBg": "#20242d", "navText": "white", "pageBg": "#20242d" }
+}

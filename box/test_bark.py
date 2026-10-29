@@ -42,7 +42,7 @@ class BarkTests(TransactionTestCase):
         self.assertFalse(deliver_one())
 
     def test_invalid_and_honeypot_do_not_queue(self):
-        self.assertEqual(self.ask(text='问' * 501).status_code, 400)
+        self.assertEqual(self.ask(text='问' * 701).status_code, 400)
         self.assertEqual(self.ask(website='spam').status_code, 302)
         self.assertFalse(BarkJob.objects.exists())
 

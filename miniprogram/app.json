@@ -1,0 +1,14 @@
+{
+  "pages": ["pages/wall/index", "pages/ask/index", "pages/mine/index", "pages/detail/index", "pages/privacy/index", "pages/reader/index"],
+  "window": { "navigationBarTitleText": "QUESTIONBOX", "navigationBarBackgroundColor": "#f4f255", "navigationBarTextStyle": "black", "backgroundTextStyle": "dark" },
+  "tabBar": { "custom": true, "color": "#626044", "selectedColor": "#b52259", "backgroundColor": "#fffdf6", "borderStyle": "black", "list": [
+    { "pagePath": "pages/wall/index", "text": "公开回信" },
+    { "pagePath": "pages/ask/index", "text": "向我提问" },
+    { "pagePath": "pages/mine/index", "text": "我的提问" }
+  ] },
+  "usingComponents": {},
+  "darkmode": true,
+  "themeLocation": "theme.json",
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

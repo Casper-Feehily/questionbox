@@ -1,0 +1,28 @@
+<import src="../../components/common.wxml" />
+<view class="screen tabbed-screen {{theme}}">
+  <template is="header" data="{{themeChoices, themeIndex, themeLabel, demo}}" />
+  <view class="hero"><view class="tape">不必署名，尽管开口。</view><view class="title"><view>好奇心，</view><view>请投这里<text class="accent">.</text></view></view><view class="hint"><view>问题先进入私人收件箱，</view><view>收到回答并发布后才公开。</view></view></view>
+  <view wx:if="{{success}}" class="card">
+    <view class="note-heading"><text>便签已经投递 ✳</text><text class="status">{{success.status === 'answered' ? '已回复' : '等待回复'}}</text></view>
+    <view class="section-title">收到你的好奇心了！</view><view class="hint">你可以随时在“我的提问”查看回信。填写邮箱时也会订阅邮件通知。</view>
+    <button class="button" bindtap="readSuccess">查看这张便签</button>
+    <button wx:if="{{meta.reminders_enabled && !success.wechat_reminder.enabled}}" class="button secondary" bindtap="remind" disabled="{{reminding}}" loading="{{reminding}}">回复时提醒我</button>
+    <view wx:if="{{success.wechat_reminder.enabled}}" class="hint consent">{{success.reminder_label}}</view>
+  </view>
+  <view class="card">
+    <view class="note-heading"><text>给 {{meta.owner_name || '站长'}} 的一张便签</text><text class="spark">✳</text></view>
+    <label class="label" for="question">想问点什么？</label>
+    <textarea id="question" class="field" value="{{text}}" data-field="text" bindinput="input" maxlength="-1" disabled="{{sending}}" placeholder="从一个小小的好奇开始……" placeholder-style="color:#879080;" />
+    <view class="meta"><text>只接收文字 · 公开展示可匿名</text><text class="{{count > 700 ? 'accent' : ''}}">{{count}} / 700</text></view>
+    <label class="label" for="signature">你的署名（可选）</label><input id="signature" class="field" value="{{signature}}" data-field="signature" bindinput="input" maxlength="-1" disabled="{{sending}}" placeholder="留空就是匿名朋友" />
+    <view class="hint">署名会随回答公开。</view>
+    <block wx:if="{{meta.email_enabled || email}}"><label class="label" for="email">通知邮箱（可选）</label><input id="email" class="field" value="{{email}}" data-field="email" bindinput="input" maxlength="254" disabled="{{sending}}" placeholder="you@example.com" /><view class="hint">{{meta.email_enabled ? '填写即订阅首次回复与更新邮件，可随时退订。' : '邮件通知已关闭，请清空邮箱后提交。'}}</view></block>
+    <view wx:if="{{meta && !meta.wechat_enabled}}" class="error">微信提问暂未启用，请先完成服务端账号配置。</view>
+    <view wx:if="{{meta.box_full}}" class="error">提问箱已满，请联系 {{meta.owner_name}} 解决后再投递。</view>
+    <button class="button" bindtap="submit" loading="{{sending}}" disabled="{{sending || !meta || !meta.wechat_enabled}}">{{sending ? '正在投递…' : '投递便签 ✳'}}</button>
+    <view class="consent">投递使用微信标识保存“我的提问”，不读取真实姓名、头像或手机号。<text class="link" bindtap="openPrivacy">了解隐私与规则</text></view>
+  </view>
+  <view wx:if="{{error}}" class="error" role="alert">{{error}}<view wx:if="{{uncertain}}">投递结果尚未确认。保持内容不变重试，会核对同一次投递；也可进入“我的提问”查看。</view></view>
+  <button wx:if="{{!meta}}" class="button secondary" bindtap="loadMeta">重新连接</button>
+  <template is="footer" />
+</view>

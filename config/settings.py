@@ -1,4 +1,6 @@
 import ipaddress
+import json
+import re
 import os
 import secrets
 from pathlib import Path
@@ -125,6 +127,27 @@ RATE_SITE_HOUR = positive("RATE_SITE_HOUR", 300)
 MAX_QUESTIONS = 500
 
 SERVERCHAN_SENDKEY = os.environ.get("SERVERCHAN_SENDKEY", "").strip()
+
+WECHAT_ENABLED = flag("WECHAT_ENABLED")
+WECHAT_APPID = os.environ.get("WECHAT_APPID", "").strip()
+WECHAT_APP_SECRET = os.environ.get("WECHAT_APP_SECRET", "").strip()
+WECHAT_SESSION_DAYS = positive("WECHAT_SESSION_DAYS", 30)
+WECHAT_REPLY_TEMPLATE_ID = os.environ.get("WECHAT_REPLY_TEMPLATE_ID", "").strip()
+WECHAT_MINIPROGRAM_STATE = os.environ.get("WECHAT_MINIPROGRAM_STATE", "trial").strip()
+try:
+    WECHAT_REPLY_TEMPLATE_FIELDS = json.loads(os.environ.get("WECHAT_REPLY_TEMPLATE_FIELDS", "{}"))
+except json.JSONDecodeError:
+    raise ImproperlyConfigured("WECHAT_REPLY_TEMPLATE_FIELDS must be a JSON object") from None
+if not isinstance(WECHAT_REPLY_TEMPLATE_FIELDS, dict):
+    raise ImproperlyConfigured("WECHAT_REPLY_TEMPLATE_FIELDS must be a JSON object")
+for field, value in WECHAT_REPLY_TEMPLATE_FIELDS.items():
+    allowed = {"notice": r"thing\d+", "status": r"(?:thing|phrase)\d+", "time": r"time\d+", "date": r"date\d+"}
+    if not isinstance(value, str) or value not in allowed or not re.fullmatch(allowed[value], field):
+        raise ImproperlyConfigured("Invalid WeChat reply template field mapping")
+if WECHAT_ENABLED and (not WECHAT_APPID or not WECHAT_APP_SECRET):
+    raise ImproperlyConfigured("WECHAT_ENABLED requires WECHAT_APPID and WECHAT_APP_SECRET")
+if WECHAT_MINIPROGRAM_STATE not in {"developer", "trial", "formal"}:
+    raise ImproperlyConfigured("Invalid WECHAT_MINIPROGRAM_STATE")
 
 EMAIL_ENABLED = flag("EMAIL_ENABLED")
 EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")

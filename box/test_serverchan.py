@@ -41,7 +41,7 @@ class ServerChanTests(TransactionTestCase):
 
     @override_settings(MAX_QUESTIONS=1)
     def test_invalid_spam_and_full_box_do_not_queue(self):
-        self.assertEqual(self.ask(text="问" * 501).status_code, 400)
+        self.assertEqual(self.ask(text="问" * 701).status_code, 400)
         self.assertEqual(self.ask(website="https://spam.example.com").status_code, 302)
         self.assertFalse(ServerChanJob.objects.exists())
         self.assertEqual(self.ask().status_code, 302)

@@ -9,10 +9,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET
 
 from .models import Question
-
-
-def published():
-    return Question.objects.filter(answered_at__isnull=False).exclude(answer="")
+from .browsing import published, tag_choices, filter_tag
 
 
 def serialize(question):
@@ -28,14 +25,19 @@ def serialize(question):
 
 @require_GET
 def reader(request):
-    order = list(published().values_list("pk", flat=True))
+    public = published()
+    tags = tag_choices(public)
+    questions, selected_tag, has_tag_filter = filter_tag(public, tags, request.GET.get("tag"))
+    order = list(questions.values_list("pk", flat=True))
     secrets.SystemRandom().shuffle(order)
-    initial = {question.pk: serialize(question) for question in published().filter(pk__in=order[:3])}
+    initial = {question.pk: serialize(question) for question in questions.filter(pk__in=order[:3])}
     cards = [initial[pk] for pk in order[:3] if pk in initial]
     return render(request, "reader.html", {
         "cards": cards,
         "reader_data": {"order": [str(pk) for pk in order], "cards": cards},
         "total": len(order),
+        "tags": tags, "selected_tag": selected_tag, "has_tag_filter": has_tag_filter,
+        "feed_url": reverse("reader_cards") + (f"?tag={selected_tag.pk}" if selected_tag else ""),
     })
 
 
@@ -49,5 +51,7 @@ def cards(request):
         ids = list(dict.fromkeys(UUID(value) for value in raw))
     except (ValueError, AttributeError):
         return JsonResponse({"error": "回信编号有误。"}, status=400)
-    found = {question.pk: serialize(question) for question in published().filter(pk__in=ids)}
+    public = published()
+    questions, _, _ = filter_tag(public, tag_choices(public), request.GET.get("tag"))
+    found = {question.pk: serialize(question) for question in questions.filter(pk__in=ids)}
     return JsonResponse({"cards": [found[pk] for pk in ids if pk in found]})

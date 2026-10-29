@@ -1,0 +1,5 @@
+.screen .detail-back { display: inline-flex; align-items: center; margin-top: 28rpx; padding: 12rpx 22rpx; border: 2rpx solid var(--line); border-radius: 999rpx; background: var(--paper); color: var(--ink); font-size: 24rpx; }
+.detail-actions { display: flex; flex-wrap: wrap; gap: 20rpx; margin-top: 32rpx; }
+.detail-actions .button { flex: 1; min-width: 240rpx; margin: 0; border-radius: 999rpx; font-size: 26rpx; }
+.detail-single-page { margin-top: 32rpx; padding: 20rpx 0; }
+.question-share-canvas { position: fixed; left: -10000px; top: 0; width: 800px; height: 800px; pointer-events: none; }
